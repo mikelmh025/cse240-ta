@@ -144,6 +144,7 @@ class SnakeAgent:
                 return 2
             else:
                 return 1
+
         def get_state_features(state, possible_actions, boundaries_dict):
             current_snake_body = state[2]
             current_food_x = state[3]
@@ -168,55 +169,57 @@ class SnakeAgent:
             return (is_left_wall, is_right_wall, is_top_wall, is_bottom_wall,
             is_food_left, is_food_right, is_food_top, is_food_bottom, is_left_body,
             is_right_body, is_top_body, is_bottom_body)
+        
         if self._train:
             # update q-values
+            snake = Snake(state[0], state[1], state[3], state[4])
+
             for action in possible_actions:
 
-                # if no action found, then if new position in snake body no wall 
-# else wall
+                # if no action found, then if new position in snake body no wall else wall
                 is_left_wall, is_right_wall, is_top_wall, is_bottom_wall, \
                 is_food_left, is_food_right, is_food_top, is_food_bottom, is_left_body, \
                 is_right_body, is_top_body, is_bottom_body = \
-                get_state_features(state, possible_actions, boundaries_dict)
-                # print(get_state_features(state, possible_actions,boundaries_dict))
-                current_q_value = self.Q[get_position(is_left_wall, is_right_wall),
-                        get_position(is_top_wall, is_bottom_wall), get_position(is_food_left,
-                        is_food_right), get_position(is_food_top, is_food_bottom), is_top_body,
+                    get_state_features(state, possible_actions, boundaries_dict)
+                print(get_state_features(state, possible_actions,boundaries_dict))
+                current_q_value = self.Q[get_position(is_left_wall, is_right_wall),\
+                        get_position(is_top_wall, is_bottom_wall), get_position(is_food_left,\
+                        is_food_right), get_position(is_food_top, is_food_bottom), is_top_body,\
                         is_bottom_body, is_left_body, is_right_body, action]
-                #print("Current ", current_q_value)
-                snake = Snake(state[0], state[1], state[3], state[4])
+                print("Current ", current_q_value)
+                # snake = Snake(state[0], state[1], state[3], state[4])
                 new_state, new_points, new_is_dead = snake.step(action)
                 new_possible_actions, new_boundaries_dict = self.helper_func(new_state)
-                # if no action found, then if new position in snake body no wall
-# else wall
+                # if no action found, then if new position in snake body no wall else wall
                 is_new_left_wall, is_new_right_wall, is_new_top_wall,\
                 is_new_bottom_wall, is_new_food_left, is_new_food_right, is_new_food_top,\
                 is_new_food_bottom, is_new_left_body, is_new_right_body, is_new_top_body,\
                 is_new_bottom_body = \
-                get_state_features(new_state, new_possible_actions,new_boundaries_dict)
+                    get_state_features(new_state, new_possible_actions,new_boundaries_dict)
 
-                new_max_state_q_value = np.max(self.exploration_transormation(self.Q[get_position(is_new_left_wall,
-                is_new_right_wall), get_position(is_new_top_wall, is_new_bottom_wall), 
-                get_position(is_new_food_left, is_new_food_right), get_position(is_new_food_top,
-                is_new_food_bottom), is_new_top_body, is_new_bottom_body, is_new_left_body,
-                is_new_right_body, :], self.N[get_position(is_new_left_wall, is_new_right_wall),
-                get_position(is_new_top_wall, is_new_bottom_wall), get_position(is_new_food_left,
-                is_new_food_right), get_position(is_new_food_top, is_new_food_bottom),
-                is_new_top_body, is_new_bottom_body, is_new_left_body, is_new_right_body, :]))
+                q_value_list = self.Q[get_position(is_new_left_wall,is_new_right_wall), get_position(is_new_top_wall, is_new_bottom_wall), \
+                    get_position(is_new_food_left, is_new_food_right), get_position(is_new_food_top,is_new_food_bottom), \
+                    is_new_top_body, is_new_bottom_body, is_new_left_body, is_new_right_body, :]
+
+                n_value_list = self.N[get_position(is_new_left_wall, is_new_right_wall),get_position(is_new_top_wall, is_new_bottom_wall), 
+                    get_position(is_new_food_left, is_new_food_right), get_position(is_new_food_top, is_new_food_bottom), \
+                    is_new_top_body, is_new_bottom_body, is_new_left_body, is_new_right_body, :]
+
+                new_max_state_q_value = np.max(self.exploration_transormation(q_value_list, n_value_list))
+
 
                 updated_q_value = current_q_value + self.LPC * \
-                (self.compute_reward(new_points + points, new_is_dead) + self.gamma *
-                new_max_state_q_value - current_q_value)
+                    (self.compute_reward(new_points + points, new_is_dead) + self.gamma * new_max_state_q_value - current_q_value)
 
-                self.Q[get_position(is_left_wall, is_right_wall),
-                get_position(is_top_wall, is_bottom_wall), get_position(is_food_left,
-                is_food_right), get_position(is_food_top, is_food_bottom), is_top_body,
+                self.Q[get_position(is_left_wall, is_right_wall),\
+                get_position(is_top_wall, is_bottom_wall), get_position(is_food_left,\
+                is_food_right), get_position(is_food_top, is_food_bottom), is_top_body,\
                 is_bottom_body, is_left_body, is_right_body, action] = updated_q_value
 
                 # update visited count
-                self.N[get_position(is_left_wall, is_right_wall),
-                get_position(is_top_wall, is_bottom_wall), get_position(is_food_left,
-                is_food_right), get_position(is_food_top, is_food_bottom), is_top_body,
+                self.N[get_position(is_left_wall, is_right_wall),\
+                get_position(is_top_wall, is_bottom_wall), get_position(is_food_left,\
+                is_food_right), get_position(is_food_top, is_food_bottom), is_top_body,\
                 is_bottom_body, is_left_body, is_right_body, action] += 1
     # Inference
         is_left_wall, is_right_wall, is_top_wall, is_bottom_wall, is_food_left,\
@@ -224,9 +227,9 @@ class SnakeAgent:
         is_top_body, is_bottom_body = get_state_features(state, possible_actions,
         boundaries_dict)
 
-        action = np.argmax(self.Q[get_position(is_left_wall, is_right_wall),
-            get_position(is_top_wall, is_bottom_wall), get_position(is_food_left,
-            is_food_right), get_position(is_food_top, is_food_bottom), is_top_body,
+        action = np.argmax(self.Q[get_position(is_left_wall, is_right_wall),\
+            get_position(is_top_wall, is_bottom_wall), get_position(is_food_left,\
+            is_food_right), get_position(is_food_top, is_food_bottom), is_top_body,\
             is_bottom_body, is_left_body, is_right_body, :])
 
         return action

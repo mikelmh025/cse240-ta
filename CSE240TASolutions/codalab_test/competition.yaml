@@ -1,0 +1,75 @@
+title: CS240 Assignment 5 test
+description: This competition is held for students enrolled in CS142 to submit their
+  ML programming assignments and get the corresponding evaluation results.
+start_date: 2021-11-17 08:00:00+00:00
+end_date: 2022-06-07 07:00:00+00:00
+competition_docker_image: codalab/codalab-legacy:py37
+image: logo.png
+has_registration: false
+force_submission_to_leaderboard: false
+disallow_leaderboard_modifying: false
+enable_detailed_results: false
+admin_names: mikelmh025
+html:
+  Instructions: Instructions.html
+  data: data.html
+  evaluation: evaluation.html
+  get_starting_kit: get_starting_kit.html
+  overview: overview.html
+  terms: terms.html
+phases:
+  0:
+    auto_migration: false
+    color: blue
+    description: null
+    is_scoring_only: true
+    label: dataset2
+    max_submissions: 30
+    max_submissions_per_day: 30
+    phasenumber: 1
+    reference_data: reference_data_1.zip
+    scoring_program: scoring_program_1.zip
+    start_date: 2021-11-17 08:00:00+00:00
+  1:
+    auto_migration: false
+    color: orange
+    description: null
+    is_scoring_only: true
+    label: dataset3
+    max_submissions: 30
+    max_submissions_per_day: 30
+    phasenumber: 1
+    reference_data: reference_data_1.zip
+    scoring_program: scoring_program_1.zip
+    start_date: 2021-11-17 08:00:00+00:00
+leaderboard:
+  columns:
+    Accuracy:
+      label: Accuracy
+      leaderboard: &id001
+        label: Results
+        rank: 1
+      rank: 2
+      sort: desc
+    Final_Score:
+      label: Final Score
+      leaderboard: *id001
+      rank: 1
+      sort: desc
+    Fmeasure:
+      label: F-measure
+      leaderboard: *id001
+      rank: 3
+      sort: desc
+    Precision:
+      label: Precsion
+      leaderboard: *id001
+      rank: 4
+      sort: desc
+    Recall:
+      label: Recall
+      leaderboard: *id001
+      rank: 5
+      sort: desc
+  leaderboards:
+    Results: *id001
