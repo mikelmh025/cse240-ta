@@ -5,11 +5,9 @@ import tkinter as tk
 
 # 3rd party libs
 import numpy as np
-import importlib.util
-import os
-import csv
-import sys
-import data_utils
+
+# Local libs
+from Player import AIPlayer, RandomPlayer, HumanPlayer
 
 #https://stackoverflow.com/a/37737985
 def turn_worker(board, send_end, p_func):
@@ -27,11 +25,11 @@ class Game:
         self.ai_turn_limit = time
 
         #https://stackoverflow.com/a/38159672
-        self.root = tk.Tk()
-        self.root.title('Connect 4')
-        self.player_string = tk.Label(self.root, text=student_name+": "+player1.player_string)
+        root = tk.Tk()
+        root.title('Connect 4')
+        self.player_string = tk.Label(root, text=player1.player_string)
         self.player_string.pack()
-        self.c = tk.Canvas(self.root, width=700, height=600)
+        self.c = tk.Canvas(root, width=700, height=600)
         self.c.pack()
 
         for row in range(0, 700, 100):
@@ -40,48 +38,9 @@ class Game:
                 column.append(self.c.create_oval(row, col, row+100, col+100, fill=''))
             self.gui_board.append(column)
 
-        tk.Button(self.root, text='Next Move', command=self.make_move).pack()
-        tk.Button(self.root, text='Start', command=self.start).pack()
+        tk.Button(root, text='Next Move', command=self.make_move).pack()
 
-        self.score = []
-        tk.Button(self.root, text='Good-Full', command=self.good).pack()
-        tk.Button(self.root, text='Good-Parcial', command=self.good_parcial).pack()
-        tk.Button(self.root, text='Not good -Parcial', command=self.not_good_parcial).pack()
-        tk.Button(self.root, text='Zero', command=self.bad).pack()
-        tk.Button(self.root, text='Try again', command=self.again).pack()
-        # tk.Button(self.root, text='Exit', command=self.exit).pack()
-
-        self.root.mainloop()
-
-    def start(self):
-        while not self.game_over:
-            self.make_move()
-        # self.make_move()
-
-    def good(self):
-        self.score.append(1)
-        self.root.destroy()
-    
-    def good_parcial(self):
-        self.score.append(0.75)
-        self.root.destroy()
-    
-    def not_good_parcial(self):
-        self.score.append(0.5)
-        self.root.destroy()
-    
-    def bad(self):
-        self.score.append(0)
-        self.root.destroy()
-    
-    def again(self):
-        self.score.append(-1)
-        self.root.destroy()
-
-    def exit(self):
-        sys.exit()
-        
-        
+        root.mainloop()
 
     def make_move(self):
         if not self.game_over:
@@ -93,6 +52,7 @@ class Game:
                     p_func = current_player.get_expectimax_move
                 else:
                     p_func = current_player.get_alpha_beta_move
+                
                 try:
                     recv_end, send_end = mp.Pipe(False)
                     p = mp.Process(target=turn_worker, args=(self.board, send_end, p_func))
@@ -116,13 +76,9 @@ class Game:
             if self.game_completed(current_player.player_number):
                 self.game_over = True
                 self.player_string.configure(text=self.players[self.current_turn].player_string + ' wins!')
-            elif self.full_board():
-                self.game_over = True
-                self.player_string.configure(text='Tie Game')
             else:
                 self.current_turn = int(not self.current_turn)
                 self.player_string.configure(text=self.players[self.current_turn].player_string)
-        a=1
 
     def update_board(self, move, player_num):
         if 0 in self.board[:,move]:
@@ -179,11 +135,9 @@ class Game:
                 check_verticle(board) or
                 check_diagonal(board))
 
-    def full_board(self):
-        return not 0 in self.board
 
 
-def main(player1, player2, time,submission_path):
+def main(player1, player2, time):
     """
     Creates player objects based on the string paramters that are passed
     to it and calls play_game()
@@ -192,14 +146,6 @@ def main(player1, player2, time,submission_path):
     player1 - a string ['ai', 'random', 'human']
     player2 - a string ['ai', 'random', 'human']
     """
-    Player_spec = importlib.util.spec_from_file_location('submissions', submission_path)
-    foo = importlib.util.module_from_spec(Player_spec)
-    Player_spec.loader.exec_module(foo)
-    AIPlayer = foo.AIPlayer
-    RandomPlayer = foo.RandomPlayer
-    HumanPlayer = foo.HumanPlayer
-
-
     def make_player(name, num):
         if name=='ai':
             return AIPlayer(num)
@@ -208,12 +154,7 @@ def main(player1, player2, time,submission_path):
         elif name=='human':
             return HumanPlayer(num)
 
-    record = Game(make_player(player1, 1), make_player(player2, 2), time)
-    while -1 in record.score:
-        record = Game(make_player(player1, 1), make_player(player2, 2), time)
-
-    mean = np.mean(record.score)
-    return mean
+    Game(make_player(player1, 1), make_player(player2, 2), time)
 
 
 def play_game(player1, player2):
@@ -231,9 +172,6 @@ def play_game(player1, player2):
 
 
 
-
-
-
 if __name__=='__main__':
     player_types = ['ai', 'random', 'human']
     parser = argparse.ArgumentParser()
@@ -245,72 +183,4 @@ if __name__=='__main__':
                         help='Time to wait for a move in seconds (int)')
     args = parser.parse_args()
 
-    # 1: Find out all the submissions
-    # 2: Import submission models one by one
-    # 3: Run the game with each submission
-    # 4: Record the results
-
-    # Local libs
-    # submission_path = 'submissions/adlercoen_70406_6761435_Player.py'
-    # submission_path = 'TA solution/Player.py'
-    # Given a dir find all the py files
-    submission_dir_path = 'regrade' #'regrade' #'submissions'
-
-    if submission_dir_path == 'submissions':
-        grading_report_name = 'grading_report%s.csv' % ("_"+args.player1 + '_' + args.player2)
-    else:
-        grading_report_name = '%s_report%s.csv' % (submission_dir_path,"_"+args.player1 + '_' + args.player2)
-
-
-    # submission_files = [f for f in os.listdir(submission_dir_path) if f.endswith('.py')]
-
-    submission_files = data_utils.make_pyset(submission_dir_path)
-
-    # Create or load initial grading report
-    grade_dict = {}
-    if os.path.exists(grading_report_name):
-        grade_dict = data_utils.load_grading_csv(grading_report_name)
-
-
-    # Loop through all the submissions
-    for submission_file in submission_files:
-        if 'ConnectFour' in submission_file: continue
-        if 'Player' not in submission_file: print('Skipping %s' % submission_file)
-        if submission_file in grade_dict: 
-            if float(grade_dict[submission_file][0]) in [1,0.75,0,-1]:
-                continue
-        
-        student_name = submission_file.replace(submission_dir_path+'/','').split('_')[0]
-        print("start grading %s" % student_name)
-        # student_name = submission_file.split('/')[-1].split('_')[0]
-        
-        # cur_submission_path = os.path.join(submission_dir_path, submission_file)
-        # Grade one submission
-        # try:
-        score = main(args.player1, args.player2, args.time,submission_path=submission_file)
-        # except:
-            # score = -1
-        # score = 1 # default score
-
-        grade_dict[submission_file] = [score, student_name]
-
-
-        # Save the grading report
-
-        if not os.path.exists(grading_report_name):
-            header = ['file_name', 'score']
-            writer = csv.writer(f)
-            writer.writerow(header)
-        
-        with open(grading_report_name, 'a') as f:
-            writer = csv.writer(f)
-            # for name in grade_dict:
-            name = submission_file
-            if grade_dict[name] == 'nan': continue
-            row = [name, grade_dict[name][0], grade_dict[name][1]]
-            writer.writerow(row)
-
-        temp_dict = data_utils.load_grading_csv (grading_report_name)
-        a=1
-
-    
+    main(args.player1, args.player2, args.time)
