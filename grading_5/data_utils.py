@@ -34,6 +34,6 @@ def load_grading_csv(csv_path):
         for row in reader:
             # make sure value is not nan
             if row[1] == 'nan': continue
-            grade_dict[row[0]] = [row[1], row[2]]
+            grade_dict[row[0]] = row[1:]
 
     return grade_dict

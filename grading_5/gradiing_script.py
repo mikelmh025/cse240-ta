@@ -6,55 +6,75 @@ import sys
 import time
 import csv
 
+
+class NoStdStreams(object):
+    def __init__(self,stdout = None, stderr = None):
+        self.devnull = open(os.devnull,'w')
+        self._stdout = stdout or self.devnull or sys.stdout
+        self._stderr = stderr or self.devnull or sys.stderr
+
+    def __enter__(self):
+        self.old_stdout, self.old_stderr = sys.stdout, sys.stderr
+        self.old_stdout.flush(); self.old_stderr.flush()
+        sys.stdout, sys.stderr = self._stdout, self._stderr
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._stdout.flush(); self._stderr.flush()
+        sys.stdout = self.old_stdout
+        sys.stderr = self.old_stderr
+        self.devnull.close()
+
+
 def grade_submission(submission_dir,required_files,required_main_files,show_game=False):
-    student_name = submission_dir.split('/')[-1]
+    student_name = submission_dir.split('/')[-2]
     print("start grading %s" % student_name)
-    submission_files = [os.path.join(submission_dir, item) for item in required_files]
-    sumission_main_files = [os.path.join(submission_dir, item) for item in required_main_files][0]
 
-    sys.path.insert(0, submission_dir)
-    spec = importlib.util.spec_from_file_location("main", sumission_main_files)
-    main_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(main_module)
+    with NoStdStreams():
+        submission_files = [os.path.join(submission_dir, item) for item in required_files]
+        sumission_main_files = [os.path.join(submission_dir, item) for item in required_main_files][0]
 
-    main_args = main_module.helper.make_args()
-    main_args.NUM_TRAIN_ITER = 10
-    print(main_args)
-    game1 = main_module.SnakeGame(main_args)
+        sys.path.insert(0, submission_dir)
+        spec = importlib.util.spec_from_file_location("main", sumission_main_files)
+        main_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(main_module)
 
-    if game1.args.NUM_TRAIN_ITER != 0:
-        game1.do_training()
+        main_args = main_module.helper.make_args()
+        main_args.NUM_TRAIN_ITER = 10
+        print(main_args)
+        game1 = main_module.SnakeGame(main_args)
 
-    # Instead of using their do_testing() function, we will use our own
-    def do_testing(game1):
-        INITIALIZATION=0
-        print("Test Phase:")
-        game1.agent.set_eval()
-        game1.agent.load_model()
-        points_results = []
-        start = time.time()
-        for game in range(1, game1.args.NUM_TEST_ITER + 1):
-            print("TESTING NUMBER: " + str(game))
-            isAgentDead = False
-            action = game1.agent.agent_action(game1.env.get_state(), INITIALIZATION, isAgentDead)
-            while True:
-                if isAgentDead:
-                    break
-                state, points, isAgentDead = game1.env.step(action)
-                action = game1.agent.agent_action(state, points, isAgentDead)
-            points_results.append(game1.env.get_points())
-            game1.env.reset()
+        if game1.args.NUM_TRAIN_ITER != 0:
+            game1.do_training()
 
+        # Instead of using their do_testing() function, we will use our own
+        def do_testing(game1):
+            INITIALIZATION=0
+            print("Test Phase:")
+            game1.agent.set_eval()
+            game1.agent.load_model()
+            points_results = []
+            start = time.time()
+            for game in range(1, game1.args.NUM_TEST_ITER + 1):
+                print("TESTING NUMBER: " + str(game))
+                isAgentDead = False
+                action = game1.agent.agent_action(game1.env.get_state(), INITIALIZATION, isAgentDead)
+                while True:
+                    if isAgentDead:
+                        break
+                    state, points, isAgentDead = game1.env.step(action)
+                    action = game1.agent.agent_action(state, points, isAgentDead)
+                points_results.append(game1.env.get_points())
+                game1.env.reset()
 
-        print("Testing takes", time.time() - start, "seconds")
-        print("Number of Games:", len(points_results))
-        print("Average Points:", sum(points_results)/len(points_results))
-        print("Max Points:", max(points_results))
-        print("Min Points:", min(points_results))
+            return time.time() - start, len(points_results), sum(points_results)/len(points_results), max(points_results), min(points_results)
 
-        return time.time() - start, len(points_results), sum(points_results)/len(points_results), max(points_results), min(points_results)
+        test_time, num_games, avg_points, max_points, min_points = do_testing(game1)
 
-    test_time, num_games, avg_points, max_points, min_points = do_testing(game1)
+    print("Testing takes", test_time, "seconds")
+    print("Number of Games:", num_games)
+    print("Average Points:", avg_points)
+    print("Max Points:", max_points)
+    print("Min Points:", min_points)
     if show_game: game1.show_games()
 
     grade = 100
